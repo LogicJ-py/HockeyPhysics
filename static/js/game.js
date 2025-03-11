@@ -6,17 +6,19 @@ let score = 0;
 function setup() {
     const canvas = createCanvas(800, 400);
     canvas.parent('game-container');
-    
+
     // Initialiser le joueur
     player = {
         x: width / 4,
         y: height / 2,
         radius: 20,
         mass: 5,
-        speed: 5,
+        maxSpeed: 5,
+        acceleration: 0.5,
+        friction: 0.95,
         velocity: { x: 0, y: 0 }
     };
-    
+
     // Initialiser le palet
     puck = {
         x: width / 2,
@@ -25,7 +27,7 @@ function setup() {
         velocity: { x: 0, y: 0 },
         friction: 0.98
     };
-    
+
     // Initialiser les buts
     goals = [
         { x: 0, y: height/2, width: 10, height: 100 },
@@ -35,19 +37,19 @@ function setup() {
 
 function draw() {
     background(33, 37, 41); // Couleur de fond Bootstrap dark
-    
+
     // Dessiner la patinoire
     drawRink();
-    
+
     // Mettre à jour la position du joueur
     updatePlayer();
-    
+
     // Mettre à jour la position du palet
     updatePuck();
-    
+
     // Gérer les collisions
     handleCollisions();
-    
+
     // Dessiner les éléments
     drawPlayer();
     drawPuck();
@@ -63,16 +65,32 @@ function drawRink() {
 }
 
 function updatePlayer() {
-    // Mise à jour de la masse et de la vitesse depuis les curseurs
+    // Mise à jour de la masse depuis le curseur
     player.mass = document.getElementById('massRange').value;
-    player.speed = document.getElementById('speedRange').value;
-    
-    // Contrôles du joueur
-    if (keyIsDown(LEFT_ARROW)) player.x -= player.speed;
-    if (keyIsDown(RIGHT_ARROW)) player.x += player.speed;
-    if (keyIsDown(UP_ARROW)) player.y -= player.speed;
-    if (keyIsDown(DOWN_ARROW)) player.y += player.speed;
-    
+    // Mise à jour de l'accélération depuis le curseur de vitesse
+    player.acceleration = document.getElementById('speedRange').value * 0.1;
+
+    // Appliquer l'accélération en fonction des touches
+    if (keyIsDown(LEFT_ARROW)) player.velocity.x -= player.acceleration;
+    if (keyIsDown(RIGHT_ARROW)) player.velocity.x += player.acceleration;
+    if (keyIsDown(UP_ARROW)) player.velocity.y -= player.acceleration;
+    if (keyIsDown(DOWN_ARROW)) player.velocity.y += player.acceleration;
+
+    // Limiter la vitesse maximale
+    let speed = sqrt(player.velocity.x * player.velocity.x + player.velocity.y * player.velocity.y);
+    if (speed > player.maxSpeed) {
+        player.velocity.x = (player.velocity.x / speed) * player.maxSpeed;
+        player.velocity.y = (player.velocity.y / speed) * player.maxSpeed;
+    }
+
+    // Appliquer la friction
+    player.velocity.x *= player.friction;
+    player.velocity.y *= player.friction;
+
+    // Mettre à jour la position
+    player.x += player.velocity.x;
+    player.y += player.velocity.y;
+
     // Limites du terrain
     player.x = constrain(player.x, player.radius, width - player.radius);
     player.y = constrain(player.y, player.radius, height - player.radius);
@@ -82,11 +100,11 @@ function updatePuck() {
     // Appliquer la vélocité
     puck.x += puck.velocity.x;
     puck.y += puck.velocity.y;
-    
+
     // Appliquer la friction
     puck.velocity.x *= puck.friction;
     puck.velocity.y *= puck.friction;
-    
+
     // Rebonds sur les bords
     if (puck.x < puck.radius || puck.x > width - puck.radius) {
         puck.velocity.x *= -1;
@@ -94,7 +112,7 @@ function updatePuck() {
     if (puck.y < puck.radius || puck.y > height - puck.radius) {
         puck.velocity.y *= -1;
     }
-    
+
     // Limites du terrain
     puck.x = constrain(puck.x, puck.radius, width - puck.radius);
     puck.y = constrain(puck.y, puck.radius, height - puck.radius);
@@ -105,17 +123,17 @@ function handleCollisions() {
     let dx = puck.x - player.x;
     let dy = puck.y - player.y;
     let distance = sqrt(dx * dx + dy * dy);
-    
+
     if (distance < player.radius + puck.radius) {
         // Calculer l'angle de collision
         let angle = atan2(dy, dx);
-        
+
         // Transférer la vitesse au palet
-        let force = player.mass * player.speed * 0.1;
+        let force = player.mass * sqrt(player.velocity.x * player.velocity.x + player.velocity.y * player.velocity.y) * 0.5;
         puck.velocity.x = cos(angle) * force;
         puck.velocity.y = sin(angle) * force;
     }
-    
+
     // Vérifier si le palet est dans un but
     goals.forEach((goal, index) => {
         if (puck.x < goal.x + goal.width && 
