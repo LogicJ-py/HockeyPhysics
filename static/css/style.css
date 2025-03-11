@@ -1,0 +1,22 @@
+#game-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px;
+}
+
+canvas {
+    border: 2px solid var(--bs-border-color);
+    border-radius: 8px;
+}
+
+.score-display {
+    text-align: center;
+    margin-top: 20px;
+}
+
+#score {
+    font-size: 2em;
+    font-weight: bold;
+    color: var(--bs-info);
+}

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hockey sur Glace 2D</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-9">
+                <div id="game-container"></div>
+            </div>
+            <div class="col-md-3">
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5>Paramètres</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="massRange" class="form-label">Masse du joueur</label>
+                            <input type="range" class="form-range" id="massRange" min="1" max="10" value="5">
+                        </div>
+                        <div class="mb-3">
+                            <label for="speedRange" class="form-label">Vitesse du joueur</label>
+                            <input type="range" class="form-range" id="speedRange" min="1" max="10" value="5">
+                        </div>
+                        <div class="score-display">
+                            <h6>Score</h6>
+                            <p id="score">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/static/js/game.js"></script>
+</body>
+</html>
