@@ -45,8 +45,8 @@ function setup() {
 
     // Initialiser les buts
     goals = [
-        { x: 0, y: height/2, width: 10, height: 100 },
-        { x: width-10, y: height/2, width: 10, height: 100 }
+        { x: 0, y: height/2, width: 10, height: 100 },          // But gauche (équipe 1)
+        { x: width-10, y: height/2, width: 10, height: 100 }    // But droit (équipe 2)
     ];
 }
 
@@ -188,13 +188,19 @@ function handleCollisions() {
             puck.y > goal.y - goal.height/2 && 
             puck.y < goal.y + goal.height/2) {
             // But marqué !
-            if (index === 0) scores.team2++; // But pour l'équipe 2
-            else scores.team1++; // But pour l'équipe 1
+            if (index === 0) {
+                scores.team1++; // But pour l'équipe 1 (quand le palet entre dans le but gauche)
+                console.log("But pour l'équipe 1!");
+            } else {
+                scores.team2++; // But pour l'équipe 2 (quand le palet entre dans le but droit)
+                console.log("But pour l'équipe 2!");
+            }
 
             // Mettre à jour l'affichage des scores
             document.getElementById('score1').textContent = scores.team1;
             document.getElementById('score2').textContent = scores.team2;
 
+            // Réinitialiser le palet après un but
             resetPuck();
         }
     });
