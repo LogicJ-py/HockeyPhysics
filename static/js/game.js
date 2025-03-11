@@ -183,25 +183,26 @@ function handleCollisions() {
 
     // Vérifier si le palet est dans un but
     goals.forEach((goal, index) => {
-        if (puck.x < goal.x + goal.width && 
-            puck.x > goal.x && 
-            puck.y > goal.y - goal.height/2 && 
-            puck.y < goal.y + goal.height/2) {
-            // But marqué !
-            if (index === 0) {
-                scores.team1++; // But pour l'équipe 1 (quand le palet entre dans le but gauche)
-                console.log("But pour l'équipe 1!");
-            } else {
-                scores.team2++; // But pour l'équipe 2 (quand le palet entre dans le but droit)
-                console.log("But pour l'équipe 2!");
+        if (index === 0) {  // But gauche
+            if (puck.x <= goal.x + goal.width && 
+                puck.y > goal.y - goal.height/2 && 
+                puck.y < goal.y + goal.height/2) {
+                // But marqué !
+                scores.team1++;
+                console.log("But pour l'équipe 1! Score:", scores.team1);
+                document.getElementById('score1').textContent = scores.team1;
+                resetPuck();
             }
-
-            // Mettre à jour l'affichage des scores
-            document.getElementById('score1').textContent = scores.team1;
-            document.getElementById('score2').textContent = scores.team2;
-
-            // Réinitialiser le palet après un but
-            resetPuck();
+        } else {  // But droit
+            if (puck.x >= goal.x && 
+                puck.y > goal.y - goal.height/2 && 
+                puck.y < goal.y + goal.height/2) {
+                // But marqué !
+                scores.team2++;
+                console.log("But pour l'équipe 2! Score:", scores.team2);
+                document.getElementById('score2').textContent = scores.team2;
+                resetPuck();
+            }
         }
     });
 }
