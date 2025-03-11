@@ -15,8 +15,17 @@ canvas {
     margin-top: 20px;
 }
 
-#score {
+.score {
     font-size: 2em;
     font-weight: bold;
     color: var(--bs-info);
+    margin: 0;
+}
+
+.card {
+    margin-bottom: 20px;
+}
+
+.card-header h5 {
+    margin-bottom: 0;
 }

@@ -17,20 +17,52 @@
             <div class="col-md-3">
                 <div class="card mt-3">
                     <div class="card-header">
-                        <h5>Paramètres</h5>
+                        <h5>Joueur 1 (Flèches)</h5>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label for="massRange" class="form-label">Masse du joueur</label>
-                            <input type="range" class="form-range" id="massRange" min="1" max="10" value="5">
+                            <label for="massRange1" class="form-label">Masse du joueur</label>
+                            <input type="range" class="form-range" id="massRange1" min="1" max="10" value="5">
                         </div>
                         <div class="mb-3">
-                            <label for="speedRange" class="form-label">Vitesse du joueur</label>
-                            <input type="range" class="form-range" id="speedRange" min="1" max="10" value="5">
+                            <label for="speedRange1" class="form-label">Vitesse du joueur</label>
+                            <input type="range" class="form-range" id="speedRange1" min="1" max="10" value="5">
                         </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5>Joueur 2 (WASD)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="massRange2" class="form-label">Masse du joueur</label>
+                            <input type="range" class="form-range" id="massRange2" min="1" max="10" value="5">
+                        </div>
+                        <div class="mb-3">
+                            <label for="speedRange2" class="form-label">Vitesse du joueur</label>
+                            <input type="range" class="form-range" id="speedRange2" min="1" max="10" value="5">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-3">
+                    <div class="card-header">
+                        <h5>Score</h5>
+                    </div>
+                    <div class="card-body">
                         <div class="score-display">
-                            <h6>Score</h6>
-                            <p id="score">0</p>
+                            <div class="row">
+                                <div class="col">
+                                    <h6>Équipe 1</h6>
+                                    <p id="score1" class="score">0</p>
+                                </div>
+                                <div class="col">
+                                    <h6>Équipe 2</h6>
+                                    <p id="score2" class="score">0</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

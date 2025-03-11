@@ -1,22 +1,37 @@
-let player;
+let player1;
+let player2;
 let puck;
 let goals = [];
-let score = 0;
+let scores = { team1: 0, team2: 0 };
 
 function setup() {
     const canvas = createCanvas(800, 400);
     canvas.parent('game-container');
 
-    // Initialiser le joueur
-    player = {
-        x: width / 4,
+    // Initialiser le joueur 1 (bleu, contrôles flèches)
+    player1 = {
+        x: width * 0.75,
         y: height / 2,
         radius: 20,
         mass: 5,
         maxSpeed: 5,
         acceleration: 0.5,
         friction: 0.95,
-        velocity: { x: 0, y: 0 }
+        velocity: { x: 0, y: 0 },
+        color: color(52, 152, 219) // Bleu
+    };
+
+    // Initialiser le joueur 2 (rouge, contrôles WASD)
+    player2 = {
+        x: width * 0.25,
+        y: height / 2,
+        radius: 20,
+        mass: 5,
+        maxSpeed: 5,
+        acceleration: 0.5,
+        friction: 0.95,
+        velocity: { x: 0, y: 0 },
+        color: color(231, 76, 60) // Rouge
     };
 
     // Initialiser le palet
@@ -41,17 +56,17 @@ function draw() {
     // Dessiner la patinoire
     drawRink();
 
-    // Mettre à jour la position du joueur
-    updatePlayer();
-
-    // Mettre à jour la position du palet
+    // Mettre à jour les positions
+    updatePlayer(player1, false);
+    updatePlayer(player2, true);
     updatePuck();
 
     // Gérer les collisions
     handleCollisions();
 
     // Dessiner les éléments
-    drawPlayer();
+    drawPlayer(player1);
+    drawPlayer(player2);
     drawPuck();
     drawGoals();
 }
@@ -64,17 +79,26 @@ function drawRink() {
     line(width/2, 0, width/2, height);
 }
 
-function updatePlayer() {
+function updatePlayer(player, isPlayer2) {
     // Mise à jour de la masse depuis le curseur
-    player.mass = document.getElementById('massRange').value;
+    player.mass = document.getElementById(isPlayer2 ? 'massRange2' : 'massRange1').value;
     // Mise à jour de l'accélération depuis le curseur de vitesse
-    player.acceleration = document.getElementById('speedRange').value * 0.1;
+    player.acceleration = document.getElementById(isPlayer2 ? 'speedRange2' : 'speedRange1').value * 0.1;
 
-    // Appliquer l'accélération en fonction des touches
-    if (keyIsDown(LEFT_ARROW)) player.velocity.x -= player.acceleration;
-    if (keyIsDown(RIGHT_ARROW)) player.velocity.x += player.acceleration;
-    if (keyIsDown(UP_ARROW)) player.velocity.y -= player.acceleration;
-    if (keyIsDown(DOWN_ARROW)) player.velocity.y += player.acceleration;
+    // Contrôles spécifiques à chaque joueur
+    if (isPlayer2) {
+        // WASD pour joueur 2
+        if (keyIsDown(65)) player.velocity.x -= player.acceleration; // A
+        if (keyIsDown(68)) player.velocity.x += player.acceleration; // D
+        if (keyIsDown(87)) player.velocity.y -= player.acceleration; // W
+        if (keyIsDown(83)) player.velocity.y += player.acceleration; // S
+    } else {
+        // Flèches pour joueur 1
+        if (keyIsDown(LEFT_ARROW)) player.velocity.x -= player.acceleration;
+        if (keyIsDown(RIGHT_ARROW)) player.velocity.x += player.acceleration;
+        if (keyIsDown(UP_ARROW)) player.velocity.y -= player.acceleration;
+        if (keyIsDown(DOWN_ARROW)) player.velocity.y += player.acceleration;
+    }
 
     // Limiter la vitesse maximale
     let speed = sqrt(player.velocity.x * player.velocity.x + player.velocity.y * player.velocity.y);
@@ -119,19 +143,42 @@ function updatePuck() {
 }
 
 function handleCollisions() {
-    // Collision joueur-palet
-    let dx = puck.x - player.x;
-    let dy = puck.y - player.y;
+    // Collision joueurs-palet
+    [player1, player2].forEach(player => {
+        let dx = puck.x - player.x;
+        let dy = puck.y - player.y;
+        let distance = sqrt(dx * dx + dy * dy);
+
+        if (distance < player.radius + puck.radius) {
+            // Calculer l'angle de collision
+            let angle = atan2(dy, dx);
+
+            // Transférer la vitesse au palet
+            let force = player.mass * sqrt(player.velocity.x * player.velocity.x + player.velocity.y * player.velocity.y) * 0.5;
+            puck.velocity.x = cos(angle) * force;
+            puck.velocity.y = sin(angle) * force;
+        }
+    });
+
+    // Collision entre joueurs
+    let dx = player2.x - player1.x;
+    let dy = player2.y - player1.y;
     let distance = sqrt(dx * dx + dy * dy);
 
-    if (distance < player.radius + puck.radius) {
-        // Calculer l'angle de collision
+    if (distance < player1.radius + player2.radius) {
         let angle = atan2(dy, dx);
+        let overlap = player1.radius + player2.radius - distance;
 
-        // Transférer la vitesse au palet
-        let force = player.mass * sqrt(player.velocity.x * player.velocity.x + player.velocity.y * player.velocity.y) * 0.5;
-        puck.velocity.x = cos(angle) * force;
-        puck.velocity.y = sin(angle) * force;
+        // Séparer les joueurs
+        player1.x -= cos(angle) * overlap / 2;
+        player1.y -= sin(angle) * overlap / 2;
+        player2.x += cos(angle) * overlap / 2;
+        player2.y += sin(angle) * overlap / 2;
+
+        // Échanger les vitesses
+        let temp = {x: player1.velocity.x, y: player1.velocity.y};
+        player1.velocity = {x: player2.velocity.x, y: player2.velocity.y};
+        player2.velocity = {x: temp.x, y: temp.y};
     }
 
     // Vérifier si le palet est dans un but
@@ -141,8 +188,13 @@ function handleCollisions() {
             puck.y > goal.y - goal.height/2 && 
             puck.y < goal.y + goal.height/2) {
             // But marqué !
-            score += (index === 1) ? 1 : -1; // +1 pour but droit, -1 pour but gauche
-            document.getElementById('score').textContent = score;
+            if (index === 0) scores.team2++; // But pour l'équipe 2
+            else scores.team1++; // But pour l'équipe 1
+
+            // Mettre à jour l'affichage des scores
+            document.getElementById('score1').textContent = scores.team1;
+            document.getElementById('score2').textContent = scores.team2;
+
             resetPuck();
         }
     });
@@ -155,14 +207,14 @@ function resetPuck() {
     puck.velocity.y = 0;
 }
 
-function drawPlayer() {
-    fill(52, 152, 219); // Bleu
+function drawPlayer(player) {
+    fill(player.color);
     noStroke();
     circle(player.x, player.y, player.radius * 2);
 }
 
 function drawPuck() {
-    fill(231, 76, 60); // Rouge
+    fill(255); // Blanc
     noStroke();
     circle(puck.x, puck.y, puck.radius * 2);
 }
