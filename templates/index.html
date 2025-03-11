@@ -7,12 +7,19 @@
     <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
     <link href="/static/css/style.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 </head>
 <body>
     <div class="container-fluid">
         <div class="row">
             <div class="col-md-9">
                 <div id="game-container"></div>
+                <div class="alert alert-info mt-3" role="alert">
+                    <strong>Temps restant : </strong>
+                    <span id="timer">2:00</span>
+                </div>
+                <div id="game-result" class="alert alert-success mt-3" role="alert" style="display: none;">
+                </div>
             </div>
             <div class="col-md-3">
                 <div class="card mt-3">

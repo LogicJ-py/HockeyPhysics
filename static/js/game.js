@@ -3,11 +3,42 @@ let player2;
 let puck;
 let goals = [];
 let scores = { team1: 0, team2: 0 };
+let socket;
+let gameTimer;
+let timeLeft = 120; // 2 minutes en secondes
+let bonuses = [];
+let bonusSpawnInterval;
+
+// Initialiser la connexion Socket.IO
+function initializeSocket() {
+    socket = io();
+
+    socket.on('connect', () => {
+        console.log('Connected to server');
+    });
+
+    socket.on('game_state_update', (data) => {
+        updateGameState(data);
+    });
+
+    socket.on('score_update', (data) => {
+        updateScore(data);
+    });
+
+    socket.on('bonus_update', (data) => {
+        handleBonusUpdate(data);
+    });
+}
 
 function setup() {
     const canvas = createCanvas(800, 400);
     canvas.parent('game-container');
 
+    initializeSocket();
+    startGame();
+}
+
+function startGame() {
     // Initialiser le joueur 1 (bleu, contrôles flèches)
     player1 = {
         x: width * 0.75,
@@ -18,7 +49,8 @@ function setup() {
         acceleration: 0.5,
         friction: 0.95,
         velocity: { x: 0, y: 0 },
-        color: color(52, 152, 219) // Bleu
+        color: color(52, 152, 219), // Bleu
+        bonuses: {}
     };
 
     // Initialiser le joueur 2 (rouge, contrôles WASD)
@@ -31,7 +63,8 @@ function setup() {
         acceleration: 0.5,
         friction: 0.95,
         velocity: { x: 0, y: 0 },
-        color: color(231, 76, 60) // Rouge
+        color: color(231, 76, 60), // Rouge
+        bonuses: {}
     };
 
     // Initialiser le palet
@@ -48,13 +81,67 @@ function setup() {
         { x: 0, y: height/2, width: 10, height: 100 },          // But gauche (équipe 1)
         { x: width-10, y: height/2, width: 10, height: 100 }    // But droit (équipe 2)
     ];
+
+    // Démarrer le chronomètre
+    startTimer();
+
+    // Démarrer le spawn de bonus
+    startBonusSpawning();
+}
+
+function startTimer() {
+    timeLeft = 120;
+    updateTimerDisplay();
+    gameTimer = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+        if (timeLeft <= 0) {
+            endGame();
+        }
+    }, 1000);
+}
+
+function updateTimerDisplay() {
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    document.getElementById('timer').textContent = 
+        `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+function endGame() {
+    clearInterval(gameTimer);
+    clearInterval(bonusSpawnInterval);
+    // Afficher le résultat final
+    const winner = scores.team1 > scores.team2 ? "Équipe 1" : 
+                  scores.team2 > scores.team1 ? "Équipe 2" : "Match nul";
+    document.getElementById('game-result').textContent = 
+        `Fin du match ! ${winner} ${winner !== "Match nul" ? "gagne" : ""}!`;
+}
+
+function startBonusSpawning() {
+    bonusSpawnInterval = setInterval(spawnBonus, 5000); // Nouveau bonus toutes les 5 secondes
+}
+
+function spawnBonus() {
+    const bonusTypes = ['mass', 'speed'];
+    const bonus = {
+        x: random(50, width - 50),
+        y: random(50, height - 50),
+        type: random(bonusTypes),
+        radius: 15,
+        duration: 10000 // 10 secondes
+    };
+    bonuses.push(bonus);
 }
 
 function draw() {
-    background(33, 37, 41); // Couleur de fond Bootstrap dark
+    background(33, 37, 41);
 
     // Dessiner la patinoire
     drawRink();
+
+    // Mettre à jour et dessiner les bonus
+    updateAndDrawBonuses();
 
     // Mettre à jour les positions
     updatePlayer(player1, false);
@@ -69,6 +156,82 @@ function draw() {
     drawPlayer(player2);
     drawPuck();
     drawGoals();
+
+    // Envoyer les mises à jour au serveur
+    sendGameState();
+}
+
+function updateAndDrawBonuses() {
+    for (let i = bonuses.length - 1; i >= 0; i--) {
+        const bonus = bonuses[i];
+
+        // Dessiner le bonus
+        fill(bonus.type === 'mass' ? color(155, 89, 182) : color(46, 204, 113));
+        circle(bonus.x, bonus.y, bonus.radius * 2);
+
+        // Vérifier les collisions avec les joueurs
+        [player1, player2].forEach(player => {
+            if (dist(player.x, player.y, bonus.x, bonus.y) < player.radius + bonus.radius) {
+                applyBonus(player, bonus);
+                bonuses.splice(i, 1);
+                socket.emit('bonus_collected', {
+                    type: bonus.type,
+                    player_id: player === player1 ? 'player1' : 'player2'
+                });
+            }
+        });
+    }
+}
+
+function applyBonus(player, bonus) {
+    const originalValue = bonus.type === 'mass' ? player.mass : player.maxSpeed;
+    const bonusMultiplier = 1.5;
+
+    player[bonus.type === 'mass' ? 'mass' : 'maxSpeed'] *= bonusMultiplier;
+
+    // Restaurer la valeur originale après la durée du bonus
+    setTimeout(() => {
+        player[bonus.type === 'mass' ? 'mass' : 'maxSpeed'] = originalValue;
+    }, bonus.duration);
+}
+
+function sendGameState() {
+    socket.emit('player_update', {
+        player1: {
+            x: player1.x,
+            y: player1.y,
+            velocity: player1.velocity
+        },
+        player2: {
+            x: player2.x,
+            y: player2.y,
+            velocity: player2.velocity
+        },
+        puck: {
+            x: puck.x,
+            y: puck.y,
+            velocity: puck.velocity
+        }
+    });
+}
+
+function updateGameState(data) {
+    // Mettre à jour la position des autres joueurs
+    if (data.player1) {
+        player1.x = data.player1.x;
+        player1.y = data.player1.y;
+        player1.velocity = data.player1.velocity;
+    }
+    if (data.player2) {
+        player2.x = data.player2.x;
+        player2.y = data.player2.y;
+        player2.velocity = data.player2.velocity;
+    }
+    if (data.puck) {
+        puck.x = data.puck.x;
+        puck.y = data.puck.y;
+        puck.velocity = data.puck.velocity;
+    }
 }
 
 function drawRink() {
@@ -191,6 +354,7 @@ function handleCollisions() {
                 scores.team1++;
                 console.log("But pour l'équipe 1! Score:", scores.team1);
                 document.getElementById('score1').textContent = scores.team1;
+                socket.emit('score_update', {team: 1, score: scores.team1});
                 resetPuck();
             }
         } else {  // But droit
@@ -201,6 +365,7 @@ function handleCollisions() {
                 scores.team2++;
                 console.log("But pour l'équipe 2! Score:", scores.team2);
                 document.getElementById('score2').textContent = scores.team2;
+                socket.emit('score_update', {team: 2, score: scores.team2});
                 resetPuck();
             }
         }
@@ -231,4 +396,18 @@ function drawGoals() {
     goals.forEach(goal => {
         rect(goal.x, goal.y - goal.height/2, goal.width, goal.height);
     });
+}
+
+function updateScore(data) {
+    if (data.team === 1) {
+        scores.team1 = data.score;
+        document.getElementById('score1').textContent = scores.team1;
+    } else {
+        scores.team2 = data.score;
+        document.getElementById('score2').textContent = scores.team2;
+    }
+}
+
+function handleBonusUpdate(data) {
+    //  Handle bonus updates from the server (if needed)
 }
